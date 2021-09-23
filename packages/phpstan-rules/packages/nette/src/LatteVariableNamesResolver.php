@@ -10,7 +10,7 @@ use Symplify\PHPStanRules\LattePHPStanPrinter\LatteToPhpCompiler;
 use Symplify\PHPStanRules\LattePHPStanPrinter\ValueObject\VariableAndType;
 use Symplify\PHPStanRules\Nette\Latte\RelatedFileResolver\IncludedSnippetTemplateFileResolver;
 use Symplify\PHPStanRules\Nette\Latte\RelatedFileResolver\ParentLayoutTemplateFileResolver;
-use Symplify\PHPStanRules\Nette\PhpParser\NodeVisitor\LatteVariableCollectingNodeVisitor;
+use Symplify\PHPStanRules\Nette\PhpParser\NodeVisitor\TemplateVariableCollectingNodeVisitor;
 use Symplify\PHPStanRules\Nette\PhpParser\ParentNodeAwarePhpParser;
 
 final class LatteVariableNamesResolver
@@ -18,7 +18,6 @@ final class LatteVariableNamesResolver
     public function __construct(
         private ParentNodeAwarePhpParser $parentNodeAwarePhpParser,
         private LatteToPhpCompiler $latteToPhpCompiler,
-        private LatteVariableCollectingNodeVisitor $latteVariableCollectingNodeVisitor,
         private ParentLayoutTemplateFileResolver $parentLayoutTemplateFileResolver,
         private IncludedSnippetTemplateFileResolver $includedSnippetTemplateFileResolver
     ) {
@@ -56,16 +55,20 @@ final class LatteVariableNamesResolver
     }
 
     /**
-     * @param Stmt[] $phpNodes
+     * @param Stmt[] $stmts
      * @return string[]
      */
-    private function resolveUsedVariableNamesFromPhpNodes(array $phpNodes): array
+    private function resolveUsedVariableNamesFromPhpNodes(array $stmts): array
     {
-        $phpNodeTraverser = new NodeTraverser();
-        $phpNodeTraverser->addVisitor($this->latteVariableCollectingNodeVisitor);
-        $phpNodeTraverser->traverse($phpNodes);
+        $templateVariableCollectingNodeVisitor = new TemplateVariableCollectingNodeVisitor([
+            'this', 'iterations', 'ʟ_l', 'ʟ_v',
+        ]);
 
-        return $this->latteVariableCollectingNodeVisitor->getUsedVariableNames();
+        $phpNodeTraverser = new NodeTraverser();
+        $phpNodeTraverser->addVisitor($templateVariableCollectingNodeVisitor);
+        $phpNodeTraverser->traverse($stmts);
+
+        return $templateVariableCollectingNodeVisitor->getUsedVariableNames();
     }
 
     /**

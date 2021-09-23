@@ -12,17 +12,20 @@ use PhpParser\Node\Stmt\Foreach_;
 use PhpParser\NodeVisitorAbstract;
 use Symplify\Astral\ValueObject\AttributeKey;
 
-final class LatteVariableCollectingNodeVisitor extends NodeVisitorAbstract
+final class TemplateVariableCollectingNodeVisitor extends NodeVisitorAbstract
 {
     /**
      * @var string[]
      */
-    private const DEFAULT_VARIABLE_NAMES = ['this', 'iterations', 'ʟ_l', 'ʟ_v'];
+    private $userVariableNames = [];
 
     /**
-     * @var string[]
+     * @param array<string> $defaultVariableNames
      */
-    private $userVariableNames = [];
+    public function __construct(
+        private array $defaultVariableNames
+    ) {
+    }
 
     /**
      * @param Stmt[] $nodes
@@ -50,11 +53,6 @@ final class LatteVariableCollectingNodeVisitor extends NodeVisitorAbstract
             return null;
         }
 
-        // system one → skip
-        if (in_array($node->name, self::DEFAULT_VARIABLE_NAMES, true)) {
-            return null;
-        }
-
         $this->userVariableNames[] = $node->name;
         return null;
     }
@@ -64,7 +62,7 @@ final class LatteVariableCollectingNodeVisitor extends NodeVisitorAbstract
      */
     public function getUsedVariableNames(): array
     {
-        return $this->userVariableNames;
+        return array_diff($this->userVariableNames, $this->defaultVariableNames);
     }
 
     /**
